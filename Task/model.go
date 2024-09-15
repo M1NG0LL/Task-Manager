@@ -1,12 +1,14 @@
 package task
 
+import "time"
+
 type Tasks struct {
 	TaskID      string `gorm:"primaryKey"`
 	AccountID   string
 	Title       string `gorm:"not null"`
 	Description string
-	StartDate   string `gorm:"not null"`
-	EndDate     string `gorm:"not null"`
+	StartDate   time.Time `gorm:"not null"`
+	EndDate     time.Time `gorm:"not null"`
 }
 
 type To_DO_Tasks struct {
@@ -14,6 +16,10 @@ type To_DO_Tasks struct {
 	AccountID   string
 	Title       string `gorm:"not null"`
 	Description string
-	StartDate   string `gorm:"not null"`
-	EndDate     string `gorm:"not null"`
+	StartDate   time.Time `gorm:"not null"`
+	EndDate     time.Time `gorm:"not null"`
 }
+
+
+// app pass = swku eack sobs tvwn
+

@@ -1,8 +1,11 @@
 package main
 
 import (
+	"log"
+	"net/smtp"
 	account_package "project/Account"
 	task_package "project/Task"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/sqlite"
@@ -10,6 +13,59 @@ import (
 )
 
 var db *gorm.DB
+
+const (
+    smtpServer = "smtp.example.com"
+    smtpPort = "587"
+    smtpUser = "fatahmed1928@gmail.com"
+    smtpPass = "swku eack sobs tvwn"
+)
+
+// Function to check tasks and send an email if any task is due within 24 hours
+func CheckTasksAndNotify(db *gorm.DB) {
+    now := time.Now()
+    twentyFourHoursLater := now.Add(24 * time.Hour)
+
+    var tasks []task_package.Tasks
+    err := db.Where("end_date BETWEEN ? AND ?", now, twentyFourHoursLater).Find(&tasks).Error
+    if err != nil {
+        log.Fatalf("Error querying tasks: %v", err)
+    }
+
+    if len(tasks) > 0 {
+        for _, task := range tasks {
+            var account account_package.Account
+            err := db.First(&account, "id = ?", task.AccountID).Error
+            if err != nil {
+                log.Printf("Error retrieving account for task %s: %v", task.TaskID, err)
+                continue
+            }
+
+            subject := "Upcoming Task Due Soon"
+            body := "The following task is due within the next 24 hours:\n" +
+                "Task ID: " + task.TaskID + "\n" +
+                "Title: " + task.Title + "\n" +
+                "End Date: " + task.EndDate.Format(time.RFC1123) + "\n"
+
+            err = SendEmail("fatahmed1928@gmail.com", account.Email, subject, body)
+            if err != nil {
+                log.Printf("Error sending email for task %s: %v", task.TaskID, err)
+            }
+        }
+    }
+}
+
+// Function to send an email
+func SendEmail(from, to, subject, body string) error {
+    msg := "From: " + from + "\n" +
+           "To: " + to + "\n" +
+           "Subject: " + subject + "\n\n" +
+           body
+
+    auth := smtp.PlainAuth("", smtpUser, smtpPass, smtpServer)
+    err := smtp.SendMail(smtpServer+":"+smtpPort, auth, from, []string{to}, []byte(msg))
+    return err
+}
 
 func main() {
 	router := gin.Default()
@@ -25,19 +81,27 @@ func main() {
 		panic("failed to migrate database")
 	}
 
+	// Start periodic task checking
+    ticker := time.NewTicker(1 * time.Hour) // Check every hour
+    go func() {
+        for range ticker.C {
+            CheckTasksAndNotify(db)
+        }
+    }()
+
 	// Account Part
 	account_package.Init(db)
 
-	router.POST("/login", account_package.Login) // good
-	router.POST("/accounts", account_package.CreateAccount) // good
-	router.PUT("/activation/:id", account_package.ActivateAccountByID) // good
+	router.POST("/login", account_package.Login) 
+	router.POST("/accounts", account_package.CreateAccount) 
+	router.PUT("/activation/:id", account_package.ActivateAccountByID) 
 
 	protected := router.Group("/")
 	protected.Use(account_package.AuthMiddleware())
 
-	protected.GET("/accounts", account_package.GetMyAccount) // good
-	protected.PUT("/accounts/:id", account_package.UpdateAccountByID) // good
-	protected.DELETE("/accounts/:id", account_package.DeleteAccountbyid) // good
+	protected.GET("/accounts", account_package.GetMyAccount) 
+	protected.PUT("/accounts/:id", account_package.UpdateAccountByID) 
+	protected.DELETE("/accounts/:id", account_package.DeleteAccountbyid) 
 
 
 	// Task Manager part
@@ -47,14 +111,23 @@ func main() {
 	}
 
 	task_package.InitializeDB(db)
-	protected.POST("/accounts/Tasks", task_package.CreateTask) // good
-	protected.POST("/accounts/Tasks/:id", task_package.CreateTaskbyID) // good
-	protected.GET("/accounts/Tasks", task_package.GetMyTasks) // GETTASKS have problem in printing 
-	protected.GET("/accounts/Tasks/:id", task_package.GetMyTasksbyID) // good
-	protected.PUT("/accounts/Tasks", task_package.UpdateMyTask) //good
-	protected.PUT("/accounts/Tasks/:id", task_package.UpdateTaskByID) // good
-	protected.DELETE("/accounts/Tasks/:id", task_package.DeleteTaskbyid) // THIS has problem in deleting 
-	protected.GET("/accounts/TasksToTODO/:id", task_package.AddTask_TO_TODOMODEL) // THIS has problem in adding
+
+	// Create Task
+	protected.POST("/accounts/Tasks", task_package.CreateTask) 
+	protected.POST("/accounts/Tasks/:accountid", task_package.CreateTaskbyID) 
+
+	// Get Task
+	protected.GET("/accounts/Tasks", task_package.GetMyTasks) 
+	protected.GET("/accounts/Tasks/:acountid", task_package.GetMyTasksbyID) 
+
+	// Update Task
+	protected.PUT("/accounts/Tasks/:taskid", task_package.UpdateMyTask)
+
+	// Delete Task
+	protected.DELETE("/accounts/Tasks/:taskid", task_package.DeleteTaskbyid) 
+
+	protected.POST("/accounts/TasksToTODO/:taskid", task_package.AddTask_TO_TODOMODEL) 
+	protected.DELETE("/accounts/TasksToTODO/:taskid", task_package.DeleteTODO_TASKbyid) 
 
 	router.Run(":8081")
 }
