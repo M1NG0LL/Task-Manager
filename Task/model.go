@@ -19,7 +19,3 @@ type To_DO_Tasks struct {
 	StartDate   time.Time `gorm:"not null"`
 	EndDate     time.Time `gorm:"not null"`
 }
-
-
-// app pass = swku eack sobs tvwn
-
