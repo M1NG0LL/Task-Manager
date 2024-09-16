@@ -118,7 +118,7 @@ func main() {
 
 	// Get Task
 	protected.GET("/accounts/Tasks", task_package.GetMyTasks) 
-	protected.GET("/accounts/Tasks/:acountid", task_package.GetMyTasksbyID) 
+	protected.GET("/accounts/Tasks/:accountid", task_package.GetMyTasksbyID) 
 
 	// Update Task
 	protected.PUT("/accounts/Tasks/:taskid", task_package.UpdateMyTask)
