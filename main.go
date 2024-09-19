@@ -119,21 +119,21 @@ func main() {
 	task_package.InitializeDB(db)
 
 	// Create Task
-	protected.POST("/accounts/Tasks", task_package.CreateTask) 
-	protected.POST("/accounts/Tasks/:accountid", task_package.CreateTaskbyID) 
+	protected.POST("/accounts/tasks", task_package.CreateTask) 
+	protected.POST("/accounts/tasks/:accountid", task_package.CreateTaskbyID) 
 
 	// Get Task
-	protected.GET("/accounts/Tasks", task_package.GetMyTasks) 
-	protected.GET("/accounts/Tasks/:accountid", task_package.GetMyTasksbyID) 
+	protected.GET("/accounts/tasks", task_package.GetMyTasks) 
+	protected.GET("/accounts/tasks/:accountid", task_package.GetMyTasksbyID) 
 
 	// Update Task
-	protected.PUT("/accounts/Tasks/:taskid", task_package.UpdateMyTask)
+	protected.PUT("/accounts/tasks/:taskid", task_package.UpdateMyTask)
 
 	// Delete Task
-	protected.DELETE("/accounts/Tasks/:taskid", task_package.DeleteTaskbyid) 
+	protected.DELETE("/accounts/tasks/:taskid", task_package.DeleteTaskbyid) 
 
-	protected.POST("/accounts/TasksToTODO/:taskid", task_package.AddTask_TO_TODOMODEL) 
-	protected.DELETE("/accounts/TasksToTODO/:taskid", task_package.DeleteTODO_TASKbyid) 
+	protected.POST("/accounts/taskstodo/:taskid", task_package.AddTask_TO_TODOMODEL) 
+	protected.DELETE("/accounts/taskstodo/:taskid", task_package.DeleteTODO_TASKbyid) 
 
 	router.Run(":8081")
 }

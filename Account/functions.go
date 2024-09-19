@@ -3,12 +3,12 @@ package account_package
 import (
 	"net/http"
 	"os"
-	"regexp"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -45,7 +45,8 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	if account.Password != loginRequest.Password {
+	err := bcrypt.CompareHashAndPassword([]byte(account.Password), []byte(loginRequest.Password))
+	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
 		return
 	}
@@ -55,7 +56,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	expirationTime := time.Now().Add(15 * time.Minute)
+	expirationTime := time.Now().Add(15 * time.Hour)
 	claims := &Claims{
 		ID:       account.ID,
 		IsActive: account.IsActive,
@@ -113,12 +114,6 @@ func AuthMiddleware() gin.HandlerFunc {
 	}
 }
 
-// TO verify email 
-func isValidEmail(email string) bool {
-    re := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
-    return re.MatchString(email)
-}
-
 // POST
 // Create account
 func CreateAccount(c *gin.Context) {
@@ -138,6 +133,19 @@ func CreateAccount(c *gin.Context) {
 		c.JSON(http.StatusConflict, gin.H{"error": "Username or Email already exists"})
 		return
 	}
+
+	if error_bool, error := ValidatePassword(account.Password); error_bool {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": error})
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(account.Password), bcrypt.MinCost)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		return
+	}
+	account.Password = string(hashedPassword)
 
 	namespace := uuid.MustParse(os.Getenv("SECURE_NAMESPACE")) 
 	account.ID = uuid.NewMD5(namespace, []byte(account.Username)).String()

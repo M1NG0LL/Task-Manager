@@ -2,6 +2,8 @@ package task
 
 import (
 	"net/http"
+	"os"
+	"time"
 
 	account_package "project/Account"
 
@@ -31,6 +33,21 @@ func CreateTask(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	
+	layout := os.Getenv("LAYOUT")
+	startDate, err := time.Parse(layout, task.StartDate.Format(layout))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid StartDate format"})
+		return
+	}
+	endDate, err := time.Parse(layout, task.EndDate.Format(layout))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid EndDate format"})
+		return
+	}
+
+	task.StartDate = startDate
+	task.EndDate = endDate
 
 	task.TaskID = uuid.New().String()
 
@@ -66,6 +83,21 @@ func CreateTaskbyID(c *gin.Context) {
 		return
 	}
 
+	layout := os.Getenv("LAYOUT")
+	startDate, err := time.Parse(layout, task.StartDate.Format(layout))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid StartDate format"})
+		return
+	}
+	endDate, err := time.Parse(layout, task.EndDate.Format(layout))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid EndDate format"})
+		return
+	}
+
+	task.StartDate = startDate
+	task.EndDate = endDate
+	
 	task.TaskID = uuid.New().String()
 
 	task.AccountID = accountID
