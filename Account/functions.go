@@ -2,6 +2,8 @@ package account_package
 
 import (
 	"net/http"
+	"os"
+	"regexp"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -36,7 +38,7 @@ func Login(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
 	}
-
+	
 	var account Account
 	if err := db.Where("username = ?", loginRequest.Username).First(&account).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
@@ -111,6 +113,12 @@ func AuthMiddleware() gin.HandlerFunc {
 	}
 }
 
+// TO verify email 
+func isValidEmail(email string) bool {
+    re := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+    return re.MatchString(email)
+}
+
 // POST
 // Create account
 func CreateAccount(c *gin.Context) {
@@ -120,13 +128,18 @@ func CreateAccount(c *gin.Context) {
 		return
 	}
 
+	if !isValidEmail(account.Email) {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid email format"})
+        return
+    }
+
 	var existingAccount Account
 	if err := db.Where("username = ? OR email = ?", account.Username, account.Email).First(&existingAccount).Error; err == nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "Username or Email already exists"})
 		return
 	}
 
-	namespace := uuid.MustParse("6ba7b810-9dad-11d1-80b4-00c04fd430c8") 
+	namespace := uuid.MustParse(os.Getenv("SECURE_NAMESPACE")) 
 	account.ID = uuid.NewMD5(namespace, []byte(account.Username)).String()
 
 	account.IsActive = false

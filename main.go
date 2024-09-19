@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -69,6 +70,11 @@ func SendEmail(from, to, subject, body string) error {
 
 func main() {
 	router := gin.Default()
+
+	ERR := godotenv.Load()
+    if ERR != nil {
+        log.Fatalf("Error loading .env file")
+    }
 
 	var err error
 	db, err = gorm.Open(sqlite.Open("database.db"), &gorm.Config{})
